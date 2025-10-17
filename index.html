@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Pallet Labels — One Page per Color (Color = only rule)</title>
 <style>
   :root{
@@ -20,31 +20,33 @@
                 linear-gradient(180deg, var(--bg2), #eef2f7);
     min-height:100%;
   }
-  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+  .wrap{max-width:1100px;margin:28px auto;padding:0 12px}
   header h1{margin:0 0 6px;font-size:clamp(22px,2.6vw,30px);letter-spacing:.2px}
   header p{margin:0;color:var(--muted)}
   .panel{
-    margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;
+    margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;
     box-shadow:0 12px 30px rgba(2,6,23,.08), 0 2px 6px rgba(2,6,23,.06);
   }
 
-  /* Inputs grid: SKU | Qty | Copies */
+  /* --- Inputs grid: SKU | Qty | Copies (always one row, even on iPhone) --- */
+  .panel{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .grid{
     display:grid;
-    grid-template-columns:minmax(0,1fr) 110px 90px; /* no large min to avoid overflow on phones */
-    gap:12px; align-items:center;
+    grid-template-columns: 1fr minmax(78px,18vw) minmax(70px,16vw); /* compact, stays 3 cols on phones */
+    column-gap:10px; row-gap:10px; align-items:center; min-width: 560px; /* keeps row integrity; scrolls if needed */
   }
   .row{display:contents}
+
   .label{
-    position:relative;padding:14px 14px 14px 46px;border:1px solid var(--line);border-radius:12px;background:#fff;
-    cursor:pointer;user-select:none;transition:border .15s, box-shadow .15s, transform .02s;
+    position:relative;padding:12px 12px 12px 44px;border:1px solid var(--line);border-radius:12px;background:#fff;
+    cursor:pointer;user-select:none;transition:border .15s, box-shadow .15s, transform .02s; min-height:44px;
   }
   .label:hover{border-color:#cbd5e1; box-shadow:0 3px 10px rgba(2,6,23,.06)}
   .label:active{transform:translateY(1px)}
   .label[data-hascolor="true"]{border-color:#cbd5e1}
-  .name{font-weight:700}
+  .name{font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .dot{
-    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    position:absolute; left:10px; top:50%; transform:translateY(-50%);
     width:20px; height:20px; border-radius:50%; border:2px solid #e5e7eb; background:#ffffff;
     box-shadow:0 0 0 3px #ffffff, 0 0 0 0 rgba(0,0,0,0); transition:box-shadow .2s;
     pointer-events:none;
@@ -52,18 +54,19 @@
   .label[data-hascolor="true"] .dot{border-color:#fff; box-shadow:0 0 0 3px #fff, 0 0 0 2px rgba(2,6,23,.12)}
 
   .qty, .copies{
-    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff;
-    text-align:center; font-size:16px; outline:none; /* 16px stops iOS auto-zoom */
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff;
+    text-align:center; font-size:16px; outline:none; /* 16px avoids iOS zoom */
+    height:44px; line-height:22px;
   }
   .qty:focus, .copies:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(37,99,235,.15)}
   .copies{ font-variant-numeric: tabular-nums; }
 
   /* Palette popover */
   .palette{
-    position:absolute; left:10px; top:100%; margin-top:10px;
+    position:absolute; left:8px; top:100%; margin-top:10px;
     background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px;
     display:none; z-index:9999; box-shadow:0 12px 28px rgba(2,6,23,.16);
-    width:max-content;
+    width:max-content; max-width:90vw;
   }
   .palette-row{display:flex;gap:10px;flex-wrap:wrap;max-width:360px}
   .swatch{width:30px; height:30px; border-radius:8px; border:1px solid #e5e7eb; cursor:pointer;
@@ -77,7 +80,7 @@
   }
   .palette-tip{margin-top:8px;font-size:12px;color:#6b7280}
 
-  .toolbar{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px}
+  .toolbar{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px}
   button{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#0f172a;color:#fff;cursor:pointer;font-weight:700;letter-spacing:.2px}
   button.secondary{background:#fff;color:var(--ink)}
   button:active{transform:translateY(1px)}
@@ -86,7 +89,7 @@
   #printArea{display:none}
   .pages{display:block}
 
-  /* Full page height: use dynamic viewport units on iOS */
+  /* Full page height */
   .page{
     width:100%;
     height:100vh;   /* fallback */
@@ -101,116 +104,36 @@
   }
   .cell-inner{max-width:85ch; width:100%;}
 
-  /* --- Faint cut guides when a page has exactly 2 or 3 SKUs --- */
-  .page.has-cuts .cell {
-    position: relative;
-    padding-bottom: 22px; /* small breathing room above the cut line */
-  }
-  .page.has-cuts .cell:not(:last-child) {
-    border-bottom: 1px dotted rgba(17,24,39,0.18); /* barely visible gray */
-    margin: 0 12mm; /* inset from page edges */
-  }
+  /* Faint cut guides when a page has exactly 2 or 3 SKUs */
+  .page.has-cuts .cell { position: relative; padding-bottom: 22px; }
+  .page.has-cuts .cell:not(:last-child) { border-bottom: 1px dotted rgba(17,24,39,0.18); margin: 0 12mm; }
 
-  /* Print style (original bold) */
+  /* Print style */
   .sku{
     font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
     font-size: clamp(42px, 5.8vw, 70px);
-    font-weight:700;
-    letter-spacing:0.5px;
-    white-space:nowrap;
-    margin:0;
+    font-weight:700; letter-spacing:0.5px; white-space:nowrap; margin:0;
   }
-  .qtybig{
-    margin-top:24px;
-    font-size: clamp(78px, 11vw, 140px);
-    font-weight:700;
-    line-height:1.0;
-  }
-  .unit{
-    display:block;
-    margin-top:8px;
-    font-size: clamp(26px, 3.8vw, 38px);
-    text-decoration: none;
-    text-underline-offset: 6px;
-  }
+  .qtybig{ margin-top:24px; font-size: clamp(78px, 11vw, 140px); font-weight:700; line-height:1.0; }
+  .unit{ display:block; margin-top:8px; font-size: clamp(26px, 3.8vw, 38px); text-decoration: none; text-underline-offset: 6px; }
 
   @media print {
-    body {
-      background: #fff !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .wrap { display: none !important; }
-    #printArea { display: block !important; }
-    .page {
-      background: #fff !important;   /* white background for paper */
-      color: #000 !important;         /* black text */
-      height:auto !important;         /* let content decide on paper */
-      min-height: 100vh;
-    }
-    .cell, .cell * {
-      color: #000 !important;
-      -webkit-text-stroke: 0 !important;
-      filter: none !important;
-      opacity: 1 !important;
-    }
-    h1, h2, h3, h4, h5, h6, p, span, div {
-      color: #000 !important;
-      font-weight: 700 !important;
-    }
-    /* ensure cut guides remain subtle but visible on paper */
-    .page.has-cuts .cell:not(:last-child){
-      border-bottom: 1px dotted rgba(17,24,39,0.20) !important;
-    }
+    body { background:#fff!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .wrap { display:none!important; }
+    #printArea { display:block!important; }
+    .page { background:#fff!important; color:#000!important; height:auto!important; min-height:100vh; }
+    .cell, .cell * { color:#000!important; -webkit-text-stroke:0!important; filter:none!important; opacity:1!important; }
+    h1, h2, h3, h4, h5, h6, p, span, div { color:#000!important; font-weight:700!important; }
+    .page.has-cuts .cell:not(:last-child){ border-bottom:1px dotted rgba(17,24,39,0.20)!important; }
   }
 
-  /* ---- Mobile optimizations ---- */
-  @media (max-width: 600px){
-    .grid{ grid-template-columns: 1fr; }
-    .toolbar{
-      position: sticky; bottom: 0; left: 0; right: 0;
-      background: var(--panel); padding:12px; border-top:1px solid var(--line);
-    }
-    .palette{ left:0; right:auto; max-width:90vw; }
-    .palette-row{ max-width:80vw; }
+  /* Ultra-narrow phone safety (keeps 3 columns but squeezes inputs slightly) */
+  @media (max-width: 380px){
+    .grid{ grid-template-columns: 1fr 74px 64px; min-width: 520px; }
+    .qty,.copies{ padding:8px 10px; height:42px; }
+    .label{ padding-left:42px; }
+    .dot{ left:8px; }
   }
-  /* ===== iPhone fit: compact 2-column layout ===== */
-@media (max-width: 600px){
-
-  /* 2 columns: [Qty] [Copies]; Label spans both */
-  .grid{
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  /* Because each row is: Label, Qty, Copies (repeating),
-     we position them with nth-child in the grid */
-  .grid > .label:nth-child(3n+1){ grid-column: 1 / -1; } /* label spans 2 cols */
-  .grid > .qty:nth-child(3n+2){   grid-column: 1; }
-  .grid > .copies:nth-child(3n+3){grid-column: 2; }
-
-  /* tighter, touch-friendly sizes */
-  .label{ padding:12px 12px 12px 44px; }
-  .name{  font-size: 16px; }
-  .dot{   width:18px;height:18px; left:12px; }
-
-  .qty, .copies{
-    padding:10px 12px;
-    font-size:16px;      /* prevents iOS zoom */
-    height:44px;         /* consistent hit target */
-  }
-
-  /* keep toolbar visible */
-  .toolbar{
-    position: sticky; bottom: 0; left: 0; right: 0;
-    background: var(--panel); padding:12px; border-top:1px solid var(--line);
-  }
-
-  /* palette stays inside the viewport */
-  .palette{ left:0; right:auto; max-width:90vw; }
-  .palette-row{ max-width:80vw; }
-}
-
 </style>
 </head>
 <body>
@@ -436,7 +359,6 @@ function makeColorPage(colorHex, items){
   page.className = 'page';
   page.style.background = colorHex;
 
-  /* add faint cut guides only if there are exactly 2 or 3 SKUs on the page */
   if(items.length === 2 || items.length === 3) page.classList.add('has-cuts');
 
   page.style.gridTemplateRows = `repeat(${items.length}, 1fr)`;
@@ -444,35 +366,29 @@ function makeColorPage(colorHex, items){
   return page;
 }
 
-/* ---------- Print flow (ONLY requires color) ---------- */
+/* ---------- Print flow (color = only rule) ---------- */
 document.getElementById('previewBtn').addEventListener('click', () => {
   const pages = document.getElementById('pages');
   pages.innerHTML = '';
 
-  // Base items (color required; qty can be 0)
   const base = ITEMS.map((name, idx)=>({
     name,
     qty: parseInt(document.getElementById('q'+idx).value || '0', 10),
     copies: Math.max(1, parseInt(document.getElementById('c'+idx).value || '1', 10)),
     color: colorMap[idx]
-  })).filter(x=> x.color);  // <-- only rule
+  })).filter(x=> x.color);
 
   if(!base.length){
     alert('Nothing to print. Choose a color for at least one SKU.');
     return;
   }
 
-  // Expand by copies
   const expanded = [];
-  base.forEach(it=>{
-    for(let i=0;i<it.copies;i++) expanded.push({name:it.name, qty:it.qty, color:it.color});
-  });
+  base.forEach(it=>{ for(let i=0;i<it.copies;i++) expanded.push({name:it.name, qty:it.qty, color:it.color}); });
 
-  // Group by color
   const groups = {};
   expanded.forEach(it=>{ (groups[it.color] ||= []).push(it); });
 
-  // Build pages
   Object.keys(groups)
     .sort((a,b)=> COLORS.indexOf(a) - COLORS.indexOf(b))
     .forEach(colorHex=>{
@@ -480,7 +396,6 @@ document.getElementById('previewBtn').addEventListener('click', () => {
       pages.appendChild(makeColorPage(colorHex, list));
     });
 
-  // Fit and print
   requestAnimationFrame(()=>{
     document.querySelectorAll('.sku').forEach(el=>fitText(el, 100));
     document.querySelectorAll('.qtybig').forEach(el=>fitText(el, 160));
@@ -488,39 +403,30 @@ document.getElementById('previewBtn').addEventListener('click', () => {
   });
 });
 
-/* ---------- Clear: reset to DEFAULTS (qty), copies=1, clear colors ---------- */
+/* ---------- Clear ---------- */
 document.getElementById('clearBtn').addEventListener('click', () => {
-  // Reset to default quantities
   ITEMS.forEach((name, idx) => {
     const el = document.getElementById('q'+idx);
     const def = DEFAULT_QTY[name] ?? 0;
     el.value = def;
   });
-
-  // Reset copies to 1
   document.querySelectorAll('.copies').forEach(inp => inp.value = 1);
-
-  // Clear colors
   colorMap = new Array(ITEMS.length).fill(null);
   document.querySelectorAll('.label').forEach(l=>{
     l.removeAttribute('data-hascolor');
     l.querySelector('.dot').style.background='#ffffff';
     l.querySelector('.name').style.color='';
   });
-
-  // Save reset values
-  saveQtys();
-  saveCopies();
+  saveQtys(); saveCopies();
   try{ localStorage.setItem(KEY_C, JSON.stringify(colorMap)); }catch(e){}
-
   alert('All SKUs reset to default quantities and colors cleared.');
 });
 
 /* ---------- Init ---------- */
 window.addEventListener('DOMContentLoaded', ()=>{
   loadColors();
-  applyDefaultsIfNoSaved(); // apply defaults if nothing saved
-  loadCopies();             // ensure copies load if present
+  applyDefaultsIfNoSaved();
+  loadCopies();
 });
 </script>
 </body>
