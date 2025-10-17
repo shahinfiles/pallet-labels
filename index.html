@@ -108,7 +108,7 @@
   .page.has-cuts .cell { position: relative; padding-bottom: 22px; }
   .page.has-cuts .cell:not(:last-child) { border-bottom: 1px dotted rgba(17,24,39,0.18); margin: 0 12mm; }
 
-  /* Screen typography size (auto-fit still runs) */
+  /* Print style */
   .sku{
     font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
     font-size: clamp(42px, 5.8vw, 70px);
@@ -117,7 +117,6 @@
   .qtybig{ margin-top:24px; font-size: clamp(78px, 11vw, 140px); font-weight:700; line-height:1.0; }
   .unit{ display:block; margin-top:8px; font-size: clamp(26px, 3.8vw, 38px); text-decoration: none; text-underline-offset: 6px; }
 
-  /* PRINT — Bigger type on paper */
   @media print {
     body { background:#fff!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .wrap { display:none!important; }
@@ -126,19 +125,6 @@
     .cell, .cell * { color:#000!important; -webkit-text-stroke:0!important; filter:none!important; opacity:1!important; }
     h1, h2, h3, h4, h5, h6, p, span, div { color:#000!important; font-weight:700!important; }
     .page.has-cuts .cell:not(:last-child){ border-bottom:1px dotted rgba(17,24,39,0.20)!important; }
-
-    /* Bigger print font sizes */
-    .sku{
-      font-size: clamp(56px, 8vw, 120px) !important;
-    }
-    .qtybig{
-      font-size: clamp(120px, 14vw, 240px) !important;
-      line-height: 1.0 !important;
-    }
-    .unit{
-      font-size: clamp(34px, 5vw, 60px) !important;
-      font-weight: 700 !important;
-    }
   }
 
   /* Ultra-narrow phone safety (keeps 3 columns but squeezes inputs slightly) */
@@ -148,36 +134,11 @@
     .label{ padding-left:42px; }
     .dot{ left:8px; }
   }
-@media print {
-  /* Switch from Grid → Flex only when printing */
-  .page{
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-evenly !important; /* equal space above, between, below */
-    align-items: stretch !important;
-    min-height: 100vh !important;
-    padding-block: 10mm !important; /* symmetric breathing room */
-    gap: 0 !important;              /* let space-evenly do the work */
-  }
-
-  .cell{
-    flex: 0 0 auto !important;      /* height = content, don’t stretch */
-    margin: 0 !important;
-  }
-
-  /* Keep the dotted cut lines tidy with flex */
-  .page.has-cuts .cell:not(:last-child){
-    border-bottom: 1px dotted rgba(17,24,39,0.20) !important;
-    margin: 0 12mm !important;
-    padding-bottom: 6mm !important;
-  }
+  @media print {
+  @page { size: A4; margin: 0 }
+  html, body { margin: 0 !important; }
 }
 
-  /* Print page size + zero margins for edge-to-edge */
-  @media print {
-    @page { size: A4; margin: 0 }
-    html, body { margin: 0 !important; }
-  }
 </style>
 </head>
 <body>
@@ -441,9 +402,8 @@ document.getElementById('previewBtn').addEventListener('click', () => {
     });
 
   requestAnimationFrame(()=>{
-    // ↑ Larger caps so text can grow bigger on paper
-    document.querySelectorAll('.sku').forEach(el=>fitText(el, 140));
-    document.querySelectorAll('.qtybig').forEach(el=>fitText(el, 240));
+    document.querySelectorAll('.sku').forEach(el=>fitText(el, 100));
+    document.querySelectorAll('.qtybig').forEach(el=>fitText(el, 160));
     window.print();
   });
 });
