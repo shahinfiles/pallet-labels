@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pallet Labels — One Page per Color (Color = only rule)</title>
+<style>
+  :root{
+    --ink:#0b1220; --muted:#6b7280; --bg1:#eef2ff; --bg2:#f8fafc; --line:#e5e7eb;
+    --panel:#ffffff; --focus:#2563eb;
+    --paper:#000000; --text:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; -webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--ink);
+    background: radial-gradient(1200px 600px at 10% -10%, var(--bg1), transparent 60%),
+                linear-gradient(180deg, var(--bg2), #eef2f7);
+    min-height:100%;
+  }
+  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+  header h1{margin:0 0 6px;font-size:clamp(22px,2.6vw,30px);letter-spacing:.2px}
+  header p{margin:0;color:var(--muted)}
+  .panel{
+    margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;
+    box-shadow:0 12px 30px rgba(2,6,23,.08), 0 2px 6px rgba(2,6,23,.06);
+  }
+
+  /* Inputs grid: SKU | Qty | Copies */
+  .grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 110px 90px; /* no large min to avoid overflow on phones */
+    gap:12px; align-items:center;
+  }
+  .row{display:contents}
+  .label{
+    position:relative;padding:14px 14px 14px 46px;border:1px solid var(--line);border-radius:12px;background:#fff;
+    cursor:pointer;user-select:none;transition:border .15s, box-shadow .15s, transform .02s;
+  }
+  .label:hover{border-color:#cbd5e1; box-shadow:0 3px 10px rgba(2,6,23,.06)}
+  .label:active{transform:translateY(1px)}
+  .label[data-hascolor="true"]{border-color:#cbd5e1}
+  .name{font-weight:700}
+  .dot{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:20px; height:20px; border-radius:50%; border:2px solid #e5e7eb; background:#ffffff;
+    box-shadow:0 0 0 3px #ffffff, 0 0 0 0 rgba(0,0,0,0); transition:box-shadow .2s;
+    pointer-events:none;
+  }
+  .label[data-hascolor="true"] .dot{border-color:#fff; box-shadow:0 0 0 3px #fff, 0 0 0 2px rgba(2,6,23,.12)}
+
+  .qty, .copies{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff;
+    text-align:center; font-size:16px; outline:none; /* 16px stops iOS auto-zoom */
+  }
+  .qty:focus, .copies:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  .copies{ font-variant-numeric: tabular-nums; }
+
+  /* Palette popover */
+  .palette{
+    position:absolute; left:10px; top:100%; margin-top:10px;
+    background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px;
+    display:none; z-index:9999; box-shadow:0 12px 28px rgba(2,6,23,.16);
+    width:max-content;
+  }
+  .palette-row{display:flex;gap:10px;flex-wrap:wrap;max-width:360px}
+  .swatch{width:30px; height:30px; border-radius:8px; border:1px solid #e5e7eb; cursor:pointer;
+    transition:transform .06s ease-in-out, box-shadow .15s;}
+  .swatch:hover{transform:translateY(-1px); box-shadow:0 4px 10px rgba(2,6,23,.15)}
+  .swatch[data-none="true"]{
+    background:
+      linear-gradient(135deg, transparent 47%, #9ca3af 48% 52%, transparent 53%),
+      linear-gradient(45deg,  transparent 47%, #9ca3af 48% 52%, transparent 53%),
+      #fff;
+  }
+  .palette-tip{margin-top:8px;font-size:12px;color:#6b7280}
+
+  .toolbar{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px}
+  button{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#0f172a;color:#fff;cursor:pointer;font-weight:700;letter-spacing:.2px}
+  button.secondary{background:#fff;color:var(--ink)}
+  button:active{transform:translateY(1px)}
+
+  /* Print area */
+  #printArea{display:none}
+  .pages{display:block}
+
+  /* Full page height: use dynamic viewport units on iOS */
+  .page{
+    width:100%;
+    height:100vh;   /* fallback */
+    height:100dvh;  /* iOS/modern browsers */
+    display:grid;
+    grid-template-rows: 1fr; /* will be set to repeat(n,1fr) */
+    page-break-after:always;
+  }
+  .cell{
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:18px;
+  }
+  .cell-inner{max-width:85ch; width:100%;}
+
+  /* --- Faint cut guides when a page has exactly 2 or 3 SKUs --- */
+  .page.has-cuts .cell {
+    position: relative;
+    padding-bottom: 22px; /* small breathing room above the cut line */
+  }
+  .page.has-cuts .cell:not(:last-child) {
+    border-bottom: 1px dotted rgba(17,24,39,0.18); /* barely visible gray */
+    margin: 0 12mm; /* inset from page edges */
+  }
+
+  /* Print style (original bold) */
+  .sku{
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    font-size: clamp(42px, 5.8vw, 70px);
+    font-weight:700;
+    letter-spacing:0.5px;
+    white-space:nowrap;
+    margin:0;
+  }
+  .qtybig{
+    margin-top:24px;
+    font-size: clamp(78px, 11vw, 140px);
+    font-weight:700;
+    line-height:1.0;
+  }
+  .unit{
+    display:block;
+    margin-top:8px;
+    font-size: clamp(26px, 3.8vw, 38px);
+    text-decoration: none;
+    text-underline-offset: 6px;
+  }
+
+  @media print {
+    body {
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .wrap { display: none !important; }
+    #printArea { display: block !important; }
+    .page {
+      background: #fff !important;   /* white background for paper */
+      color: #000 !important;         /* black text */
+      height:auto !important;         /* let content decide on paper */
+      min-height: 100vh;
+    }
+    .cell, .cell * {
+      color: #000 !important;
+      -webkit-text-stroke: 0 !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+    h1, h2, h3, h4, h5, h6, p, span, div {
+      color: #000 !important;
+      font-weight: 700 !important;
+    }
+    /* ensure cut guides remain subtle but visible on paper */
+    .page.has-cuts .cell:not(:last-child){
+      border-bottom: 1px dotted rgba(17,24,39,0.20) !important;
+    }
+  }
+
+  /* ---- Mobile optimizations ---- */
+  @media (max-width: 600px){
+    .grid{ grid-template-columns: 1fr; }
+    .toolbar{
+      position: sticky; bottom: 0; left: 0; right: 0;
+      background: var(--panel); padding:12px; border-top:1px solid var(--line);
+    }
+    .palette{ left:0; right:auto; max-width:90vw; }
+    .palette-row{ max-width:80vw; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Pallet Label Builder</h1>
+    </header>
+
+    <div class="panel">
+      <div class="grid" id="inputGrid"></div>
+      <div class="toolbar">
+        <button class="secondary" id="clearBtn">Clear</button>
+        <button id="previewBtn">Preview / Print</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea">
+    <div class="pages" id="pages"></div>
+  </div>
+
+<script>
+const ITEMS = [
+  "Tahina 400g","Tahina 800g","Tahina 2kg","Tahina 5kg","Tahina 18kg",
+  "Halawa Vanilla 400g","Halawa Vanilla 800g","Halawa Pistachio 400g","Halawa Pistachio 800g",
+  "Halawa Vanilla 2kg","Halawa Pistachio 2kg","Halawa Chocolate 2kg",
+  "Halawa Vanilla 4kg","Halawa Pistachio 4kg","Halawa Chocolate 4kg","Halawa Light 400g",
+  "Raha Mastic 500g","Raha Mastic 1kg","Raha Rose 500g"
+];
+
+/* Default quantities (includes Halawa Light 400g = 120, Raha Rose 500g = 7) */
+const DEFAULT_QTY = {
+  "Tahina 400g": 120,
+  "Tahina 800g": 72,
+  "Tahina 2kg": 50,
+  "Tahina 5kg": 25,
+  "Raha Mastic 1kg": 20,
+  "Raha Mastic 500g": 20,
+  "Raha Rose 500g": 7,
+  "Halawa Pistachio 400g": 120,
+  "Halawa Vanilla 400g": 120,
+  "Halawa Vanilla 800g": 72,
+  "Halawa Pistachio 800g": 72,
+  "Halawa Vanilla 2kg": 10,
+  "Halawa Pistachio 2kg": 10,
+  "Halawa Chocolate 2kg": 10,
+  "Halawa Vanilla 4kg": 5,
+  "Halawa Pistachio 4kg": 5,
+  "Halawa Chocolate 4kg": 5,
+  "Halawa Light 400g": 120
+};
+
+// Color palette
+const COLORS = ["#111827","#0ea5e9","#22c55e","#ef4444","#a855f7","#f59e0b","#14b8a6","#ec4899","#8b5cf6","#fb7185"];
+const grid = document.getElementById('inputGrid');
+
+/* ---------- Build rows: SKU | Qty | Copies ---------- */
+ITEMS.forEach((name, idx) => {
+  const row = document.createElement('div'); row.className = 'row';
+
+  // SKU (click to color)
+  const lab = document.createElement('div');
+  lab.className='label'; lab.dataset.index = idx; lab.tabIndex = 0;
+  const nameSpan = document.createElement('span'); nameSpan.className='name'; nameSpan.textContent = name;
+  lab.appendChild(nameSpan);
+
+  const dot = document.createElement('span'); dot.className='dot'; dot.style.background = '#ffffff';
+  lab.prepend(dot);
+
+  // palette
+  const pal = document.createElement('div'); pal.className='palette';
+  const palRow = document.createElement('div'); palRow.className='palette-row';
+  const none = document.createElement('div'); none.className='swatch'; none.dataset.none="true"; none.title="No color";
+  palRow.appendChild(none);
+  COLORS.forEach(hex=>{
+    const sw=document.createElement('div'); sw.className='swatch'; sw.style.background=hex; sw.title=hex; sw.dataset.color=hex;
+    palRow.appendChild(sw);
+  });
+  const palTip=document.createElement('div'); palTip.className='palette-tip'; palTip.textContent='Click a color to assign. Click outside to close.';
+  pal.append(palRow,palTip); lab.appendChild(pal);
+
+  lab.addEventListener('pointerdown', (e)=>{
+    if(e.target.classList && e.target.classList.contains('swatch')) return;
+    e.preventDefault(); e.stopPropagation();
+    closeAllPalettes(); pal.style.display='block';
+  });
+  pal.addEventListener('pointerdown', (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    const i = parseInt(lab.dataset.index,10);
+    if(e.target.dataset.none){ setColorForIndex(i, null, lab); pal.style.display='none'; return; }
+    const chosen = e.target.dataset.color; if(!chosen) return;
+    setColorForIndex(i, chosen, lab); pal.style.display='none';
+  });
+
+  // Qty
+  const inpQty = document.createElement('input');
+  inpQty.className='qty'; inpQty.type='number'; inpQty.min='0'; inpQty.step='1'; inpQty.value='0'; inpQty.id='q'+idx;
+  inpQty.setAttribute('inputmode','numeric'); inpQty.setAttribute('pattern','[0-9]*');
+  inpQty.addEventListener('input', saveQtys);
+
+  // Copies
+  const inpCopies = document.createElement('input');
+  inpCopies.className='copies'; inpCopies.type='number'; inpCopies.min='1'; inpCopies.step='1'; inpCopies.value='1'; inpCopies.id='c'+idx;
+  inpCopies.setAttribute('inputmode','numeric'); inpCopies.setAttribute('pattern','[0-9]*');
+  inpCopies.title = 'How many times to repeat this SKU on print';
+  inpCopies.addEventListener('input', ()=>{ if(inpCopies.value===''||+inpCopies.value<1) inpCopies.value=1; saveCopies(); });
+
+  row.appendChild(lab);
+  row.appendChild(inpQty);
+  row.appendChild(inpCopies);
+  grid.appendChild(row);
+});
+
+// close palettes clicking outside
+document.addEventListener('pointerdown', (e)=>{
+  const isPalette = e.target.closest && e.target.closest('.palette');
+  const isLabel   = e.target.closest && e.target.closest('.label');
+  if(!isPalette && !isLabel) closeAllPalettes();
+});
+function closeAllPalettes(){ document.querySelectorAll('.palette').forEach(p=>p.style.display='none'); }
+
+/* ---------- Persistence ---------- */
+const KEY_Q='pallet-color-qty';
+const KEY_C='pallet-color-map';
+const KEY_CP='pallet-copies';
+
+function saveQtys(){
+  const vals=[...document.querySelectorAll('.qty')].map(i=>i.value);
+  try{ localStorage.setItem(KEY_Q, JSON.stringify(vals)); }catch(e){}
+}
+function loadQtys(){
+  try{
+    const raw = localStorage.getItem(KEY_Q);
+    if(!raw) return null;
+    const vals=JSON.parse(raw);
+    if(!Array.isArray(vals) || !vals.length) return null;
+    [...document.querySelectorAll('.qty')].forEach((i,k)=>{ if(vals[k]!=null) i.value=vals[k]; });
+    return vals;
+  }catch(e){ return null; }
+}
+
+function saveCopies(){
+  const vals=[...document.querySelectorAll('.copies')].map(i=>i.value);
+  try{ localStorage.setItem(KEY_CP, JSON.stringify(vals)); }catch(e){}
+}
+function loadCopies(){
+  try{
+    const raw = localStorage.getItem(KEY_CP);
+    if(!raw) return null;
+    const vals=JSON.parse(raw);
+    if(!Array.isArray(vals) || !vals.length) return null;
+    [...document.querySelectorAll('.copies')].forEach((i,k)=>{ if(vals[k]!=null) i.value=vals[k]; });
+    return vals;
+  }catch(e){ return null; }
+}
+
+let colorMap = new Array(ITEMS.length).fill(null);
+function setColorForIndex(i, hex, labEl){
+  colorMap[i] = hex || null;
+  const lab = labEl || [...document.querySelectorAll('.label')].find(el=>+el.dataset.index===i);
+  const dot = lab.querySelector('.dot');
+  const nameSpan = lab.querySelector('.name');
+  if(hex){ dot.style.background = hex; nameSpan.style.color = hex; lab.dataset.hascolor = "true"; }
+  else   { dot.style.background = '#ffffff'; nameSpan.style.color = ''; lab.removeAttribute('data-hascolor'); }
+  try{ localStorage.setItem(KEY_C, JSON.stringify(colorMap)); }catch(e){}
+}
+function loadColors(){
+  try{
+    const loaded=JSON.parse(localStorage.getItem(KEY_C)||'[]');
+    if(Array.isArray(loaded) && loaded.length){
+      colorMap = new Array(ITEMS.length).fill(null);
+      loaded.forEach((v,i)=>{ colorMap[i]=v||null; });
+      document.querySelectorAll('.label').forEach(l=>{
+        const i=+l.dataset.index; const hex=colorMap[i];
+        const dot=l.querySelector('.dot'); const nm=l.querySelector('.name');
+        if(hex){ dot.style.background=hex; nm.style.color=hex; l.dataset.hascolor="true"; }
+        else   { dot.style.background='#ffffff'; nm.style.color=''; l.removeAttribute('data-hascolor'); }
+      });
+    }
+  }catch(e){}
+}
+
+/* ---------- Defaults handling ---------- */
+function applyDefaultsIfNoSaved(){
+  const savedQ = loadQtys();
+  const savedC = loadCopies();
+
+  if(!savedQ){
+    ITEMS.forEach((name, idx)=>{
+      const el = document.getElementById('q'+idx);
+      const d = DEFAULT_QTY[name] ?? 0;
+      el.value = d;
+    });
+    saveQtys();
+  }
+  if(!savedC){
+    [...document.querySelectorAll('.copies')].forEach(i=>i.value=1);
+    saveCopies();
+  }
+}
+
+/* ---------- Utilities ---------- */
+function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||''); if(!m) return {r:17,g:24,b:39}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
+function contrastColor(hex){ const {r,g,b}=hexToRgb(hex); const L=(0.299*r+0.587*g+0.114*b)/255; return L>0.6?'#000':'#fff'; }
+function fitText(el, maxSizePx){
+  const parent = el.parentElement; const pad = 24; const maxWidth = parent.clientWidth - pad;
+  let size = parseFloat(getComputedStyle(el).fontSize) || 64; const limit = maxSizePx || 120;
+  for(let s=size; s<=limit; s+=2){ el.style.fontSize = s+'px'; if(el.scrollWidth > maxWidth){ el.style.fontSize = (s-2)+'px'; break; } }
+}
+function makeCell(sku, qty, textColor){
+  const cell = document.createElement('div');
+  cell.className = 'cell'; cell.style.color = textColor;
+  cell.innerHTML = `<div class="cell-inner">
+      <h2 class="sku">${sku}</h2>
+      <div class="qtybig">${qty}</div>
+      <span class="unit">${qty==1?'box':'boxes'}</span>
+    </div>`;
+  return cell;
+}
+function makeColorPage(colorHex, items){
+  const textColor = contrastColor(colorHex);
+  const page = document.createElement('div');
+  page.className = 'page';
+  page.style.background = colorHex;
+
+  /* add faint cut guides only if there are exactly 2 or 3 SKUs on the page */
+  if(items.length === 2 || items.length === 3) page.classList.add('has-cuts');
+
+  page.style.gridTemplateRows = `repeat(${items.length}, 1fr)`;
+  items.forEach(it => page.appendChild(makeCell(it.name, it.qty, textColor)));
+  return page;
+}
+
+/* ---------- Print flow (ONLY requires color) ---------- */
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const pages = document.getElementById('pages');
+  pages.innerHTML = '';
+
+  // Base items (color required; qty can be 0)
+  const base = ITEMS.map((name, idx)=>({
+    name,
+    qty: parseInt(document.getElementById('q'+idx).value || '0', 10),
+    copies: Math.max(1, parseInt(document.getElementById('c'+idx).value || '1', 10)),
+    color: colorMap[idx]
+  })).filter(x=> x.color);  // <-- only rule
+
+  if(!base.length){
+    alert('Nothing to print. Choose a color for at least one SKU.');
+    return;
+  }
+
+  // Expand by copies
+  const expanded = [];
+  base.forEach(it=>{
+    for(let i=0;i<it.copies;i++) expanded.push({name:it.name, qty:it.qty, color:it.color});
+  });
+
+  // Group by color
+  const groups = {};
+  expanded.forEach(it=>{ (groups[it.color] ||= []).push(it); });
+
+  // Build pages
+  Object.keys(groups)
+    .sort((a,b)=> COLORS.indexOf(a) - COLORS.indexOf(b))
+    .forEach(colorHex=>{
+      const list = groups[colorHex].sort((a,b)=>a.name.localeCompare(b.name));
+      pages.appendChild(makeColorPage(colorHex, list));
+    });
+
+  // Fit and print
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.sku').forEach(el=>fitText(el, 100));
+    document.querySelectorAll('.qtybig').forEach(el=>fitText(el, 160));
+    window.print();
+  });
+});
+
+/* ---------- Clear: reset to DEFAULTS (qty), copies=1, clear colors ---------- */
+document.getElementById('clearBtn').addEventListener('click', () => {
+  // Reset to default quantities
+  ITEMS.forEach((name, idx) => {
+    const el = document.getElementById('q'+idx);
+    const def = DEFAULT_QTY[name] ?? 0;
+    el.value = def;
+  });
+
+  // Reset copies to 1
+  document.querySelectorAll('.copies').forEach(inp => inp.value = 1);
+
+  // Clear colors
+  colorMap = new Array(ITEMS.length).fill(null);
+  document.querySelectorAll('.label').forEach(l=>{
+    l.removeAttribute('data-hascolor');
+    l.querySelector('.dot').style.background='#ffffff';
+    l.querySelector('.name').style.color='';
+  });
+
+  // Save reset values
+  saveQtys();
+  saveCopies();
+  try{ localStorage.setItem(KEY_C, JSON.stringify(colorMap)); }catch(e){}
+
+  alert('All SKUs reset to default quantities and colors cleared.');
+});
+
+/* ---------- Init ---------- */
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadColors();
+  applyDefaultsIfNoSaved(); // apply defaults if nothing saved
+  loadCopies();             // ensure copies load if present
+});
+</script>
+</body>
+</html>
