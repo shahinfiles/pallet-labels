@@ -148,6 +148,20 @@
     .label{ padding-left:42px; }
     .dot{ left:8px; }
   }
+/* Add this inside your existing @media print block */
+@media print {
+  .page{
+    /* Let rows hug their content, then distribute free space evenly */
+    grid-auto-rows: auto !important;
+    grid-template-rows: unset !important;
+    align-content: space-evenly !important; /* equal top/bottom spacing */
+    justify-content: stretch !important;
+    padding-block: 6mm !important; /* small, symmetric breathing room */
+  }
+
+  /* Keep dotted cut lines tidy when spacing changes */
+  .page.has-cuts .cell { padding-bottom: 16px !important; }
+}
 
   /* Print page size + zero margins for edge-to-edge */
   @media print {
