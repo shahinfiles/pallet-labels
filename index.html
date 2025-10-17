@@ -148,19 +148,29 @@
     .label{ padding-left:42px; }
     .dot{ left:8px; }
   }
-/* Add this inside your existing @media print block */
 @media print {
+  /* Switch from Grid → Flex only when printing */
   .page{
-    /* Let rows hug their content, then distribute free space evenly */
-    grid-auto-rows: auto !important;
-    grid-template-rows: unset !important;
-    align-content: space-evenly !important; /* equal top/bottom spacing */
-    justify-content: stretch !important;
-    padding-block: 6mm !important; /* small, symmetric breathing room */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-evenly !important; /* equal space above, between, below */
+    align-items: stretch !important;
+    min-height: 100vh !important;
+    padding-block: 10mm !important; /* symmetric breathing room */
+    gap: 0 !important;              /* let space-evenly do the work */
   }
 
-  /* Keep dotted cut lines tidy when spacing changes */
-  .page.has-cuts .cell { padding-bottom: 16px !important; }
+  .cell{
+    flex: 0 0 auto !important;      /* height = content, don’t stretch */
+    margin: 0 !important;
+  }
+
+  /* Keep the dotted cut lines tidy with flex */
+  .page.has-cuts .cell:not(:last-child){
+    border-bottom: 1px dotted rgba(17,24,39,0.20) !important;
+    margin: 0 12mm !important;
+    padding-bottom: 6mm !important;
+  }
 }
 
   /* Print page size + zero margins for edge-to-edge */
