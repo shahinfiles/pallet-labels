@@ -174,6 +174,43 @@
     .palette{ left:0; right:auto; max-width:90vw; }
     .palette-row{ max-width:80vw; }
   }
+  /* ===== iPhone fit: compact 2-column layout ===== */
+@media (max-width: 600px){
+
+  /* 2 columns: [Qty] [Copies]; Label spans both */
+  .grid{
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Because each row is: Label, Qty, Copies (repeating),
+     we position them with nth-child in the grid */
+  .grid > .label:nth-child(3n+1){ grid-column: 1 / -1; } /* label spans 2 cols */
+  .grid > .qty:nth-child(3n+2){   grid-column: 1; }
+  .grid > .copies:nth-child(3n+3){grid-column: 2; }
+
+  /* tighter, touch-friendly sizes */
+  .label{ padding:12px 12px 12px 44px; }
+  .name{  font-size: 16px; }
+  .dot{   width:18px;height:18px; left:12px; }
+
+  .qty, .copies{
+    padding:10px 12px;
+    font-size:16px;      /* prevents iOS zoom */
+    height:44px;         /* consistent hit target */
+  }
+
+  /* keep toolbar visible */
+  .toolbar{
+    position: sticky; bottom: 0; left: 0; right: 0;
+    background: var(--panel); padding:12px; border-top:1px solid var(--line);
+  }
+
+  /* palette stays inside the viewport */
+  .palette{ left:0; right:auto; max-width:90vw; }
+  .palette-row{ max-width:80vw; }
+}
+
 </style>
 </head>
 <body>
