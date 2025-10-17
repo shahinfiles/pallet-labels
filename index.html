@@ -108,14 +108,29 @@
   .page.has-cuts .cell { position: relative; padding-bottom: 22px; }
   .page.has-cuts .cell:not(:last-child) { border-bottom: 1px dotted rgba(17,24,39,0.18); margin: 0 12mm; }
 
-  /* Print style */
+  /* Print style (original bold) */
   .sku{
     font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
     font-size: clamp(42px, 5.8vw, 70px);
-    font-weight:700; letter-spacing:0.5px; white-space:nowrap; margin:0;
+    font-weight:700;
+    letter-spacing:0.5px;
+    white-space:nowrap;
+    margin:0;
   }
-  .qtybig{ margin-top:24px; font-size: clamp(78px, 11vw, 140px); font-weight:700; line-height:1.0; }
-  .unit{ display:block; margin-top:8px; font-size: clamp(26px, 3.8vw, 38px); text-decoration: none; text-underline-offset: 6px; }
+  .qtybig{
+    margin-top:24px;
+    font-size: clamp(78px, 11vw, 140px);
+    font-weight:700;
+    line-height:1.0;
+  }
+  .unit{
+    display:block;
+    margin-top:8px;
+    font-size: clamp(26px, 3.8vw, 38px);
+    text-decoration: none;
+    text-underline-offset: 6px;
+  }
+
 
   @media print {
     body { background:#fff!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
